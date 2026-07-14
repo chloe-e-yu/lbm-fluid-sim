@@ -92,6 +92,7 @@ console.log(equilibrium(1,1,0,0), w[1]); //should 0.11111...
 // Phase 2: Collision and Streaming
 const tau = 0.6; // relaxation time; viscosity nu = (tau - 0.5) / 3
 const omega = 1 / tau; // relaxation rate
+const uWall = 0.1; // lid velocity (lattice units) - Lid-driven cavity
 
 // BGK collision: relax every f toward local equilibrium
 function collide() {
@@ -112,24 +113,32 @@ function collide() {
 let m0 = 0; for (let i = 0; i < f.length; i++) m0 += f[i];
 collide();
 let m1 = 0; for (let i = 0; i < f.length; i++) m1 += f[i];
-console.log ("mass befor:", m0, "after:", m1);
+console.log ("mass before:", m0, "after:", m1);
 
 let fNew = new Float32Array(NX * NY * 9); // temporary array for streaming
 
 // streaming: f values move one cell along their direction
+// lid driven cavity
 function stream() {
     for (let y = 0; y < NY; y++) {
         for (let x = 0; x < NX; x++) {
+            const { rho } = macroscopic(x,y); // for moving wall correction
             for (let q = 0; q < 9; q++) {
                 const xdest = x + cx[q];
                 const ydest = y + cy[q];
-                // skip if destination is outside the grid (walls come next step)
+
                 if (xdest < 0 || xdest >= NX || ydest < 0 || ydest >= NY) { 
-                fNew[idx(x,y,opp[q])] = f[idx(x, y, q)];
-                } else {
-                    fNew[idx(xdest,ydest,q)] = f[idx(x, y, q)];
+                    if (y == NY - 1 && cy[q] === 1) {
+                        // moving lid: bounce-back plus momentum corrction
+                        fNew[idx(x,y,opp[q])] = f[idx(x, y, q)] - 6 * w[q] * rho * cx[q] * uWall;
+                    } else {
+                    // static wall: plain bounce-back
+                    fNew[idx(x,y,opp[q])] = f[idx(x, y, q)];
+                    }
+                }  else {
+                    fNew[idx(xdest, ydest, q)] = f[idx(x,y,q)];
                 }
-            }
+            } 
         }
     }    
     const temp = f; f = fNew; fNew = temp; // swap arrays    
@@ -146,4 +155,9 @@ function step() {
     collide();
     stream();
 }
+
+// verification for velocity at center after motion
+const { ux, uy } = macroscopic(150, 100);
+console.log("center velocity after motion:", ux, uy);
+
 
