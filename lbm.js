@@ -22,6 +22,9 @@ const w = [4/9, 1/9, 1/9, 1/9, 1/9, 1/36, 1/36, 1/36, 1/36];
 // verification
 console.log("weights sum:", w.reduce((a, b) => a + b)); 
 
+// opposite direction for bounce back 1-3 2-4 5-7  6-8
+const opp = [0, 3, 4, 1, 2, 7, 8, 5, 6];
+
 // Distribution function f + Initialization
     // every lattice point (x,y) stores 9 numbers
     // f[x][y][q] = the amount of particles at point (x,y) in direction q
@@ -121,16 +124,26 @@ function stream() {
                 const xdest = x + cx[q];
                 const ydest = y + cy[q];
                 // skip if destination is outside the grid (walls come next step)
-                if (xdest < 0 || xdest >= NX || ydest < 0 || ydest >= NY) continue; 
-                fNew[idx(xdest,ydest,q)] = f[idx(x, y, q)];
+                if (xdest < 0 || xdest >= NX || ydest < 0 || ydest >= NY) { 
+                fNew[idx(x,y,opp[q])] = f[idx(x, y, q)];
+                } else {
+                    fNew[idx(xdest,ydest,q)] = f[idx(x, y, q)];
+                }
             }
         }
-    }
+    }    
     const temp = f; f = fNew; fNew = temp; // swap arrays    
 }
+// sealed-box test: with wallas on all sodes, mass must stay constant
+f[idx(50, 50, 1)] += 0.5; // disturb the efluid
 
-// give cell (50, 50) extra rightward partivles, then stream once
-f[idx(50, 50, 1)] += 0.5; // add extra rightward particles
-console.log("before stream:", f[idx(50, 50, 1)]);
-stream();
-console.log("after stream:", f[idx(51, 50, 1)]);
+let mStart = 0; for (let i = 0; i < f.length; i++) mStart += f[i];
+for (let n = 0; n < 100; n++) step();
+let mEnd = 0; for (let i = 0; i < f.length; i++) mEnd += f[i];
+console.log("sealed box, 100 steps: ", mStart, "->", mEnd);
+
+function step() {
+    collide();
+    stream();
+}
+
