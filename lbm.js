@@ -159,5 +159,7 @@ function step() {
 // verification for velocity at center after motion
 const { ux, uy } = macroscopic(150, 100);
 console.log("center velocity after motion:", ux, uy);
-
+// verificatio for velocity just below lid
+const { ux: ux_lid, uy: uy_lid } = macroscopic(150, 148);
+console.log("velocity below lid:", ux_lid, uy_lid);
 
