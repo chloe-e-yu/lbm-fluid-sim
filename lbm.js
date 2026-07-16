@@ -122,14 +122,13 @@ let fNew = new Float32Array(NX * NY * 9); // temporary array for streaming
 function stream() {
     for (let y = 0; y < NY; y++) {
         for (let x = 0; x < NX; x++) {
-            const { rho } = macroscopic(x,y); // for moving wall correction
             for (let q = 0; q < 9; q++) {
                 const xdest = x + cx[q];
                 const ydest = y + cy[q];
 
                 if (xdest < 0 || xdest >= NX || ydest < 0 || ydest >= NY) { 
                     if (y == NY - 1 && cy[q] === 1) {
-                        // moving lid: bounce-back plus momentum corrction
+                         const { rho } = macroscopic(x,y); // for moving wall correction
                         fNew[idx(x,y,opp[q])] = f[idx(x, y, q)] - 6 * w[q] * rho * cx[q] * uWall;
                     } else {
                     // static wall: plain bounce-back
@@ -163,3 +162,54 @@ console.log("center velocity after motion:", ux, uy);
 const { ux: ux_lid, uy: uy_lid } = macroscopic(150, 148);
 console.log("velocity below lid:", ux_lid, uy_lid);
 
+// Phase 3: Canvas rendering
+const canvas = document.getElementById('sim');
+const ctx = canvas.getContext('2d');
+const imgData = ctx.createImageData(NX,NY); // one pixel per lattice cell
+
+// map velocity manitude to a blue-to-white color scale
+function speedToColor(speed) {
+    // scale factor tunes sensiticity; adjust after seeing the first frame
+    const t = Math.min(speed / uWall, 1); // normalize 0-1 against lid speed
+    const r = Math.floor(30 + t * 225);
+    const g = Math.floor(30 + t * 200);
+    const b = Math.floor(80 + t * 175); 
+    return [r, g, b];
+}
+
+// draw current velocity field to the canvas
+function render(){
+    for (let y = 0; y < NY; y++) {
+        for (let x = 0; x < NX; x++){
+            const { ux, uy } = macroscopic(x, y);
+            const speed = Math.sqrt(ux * ux + uy * uy);
+            const [r, g, b] = speedToColor(speed);
+
+            // ImageData is flipped verticaflly vs. our (0,0) at bottom convention;
+            // also flat-indexed as 4 bybtes (r,g,b,a) per pixel
+            const pixelY = NY - 1 - y;
+            const p = (pixelY * NX + x) * 4;
+            imgData.data[p] = r;
+            imgData.data[p+1] = g;
+            imgData.data[p+2] = b;
+            imgData.data[p+3] = 255; 
+        }
+    }
+    ctx.putImageData(imgData,0,0);
+}
+
+// simple FPS counter
+let lastTime = performance.now(), frames = 0;
+
+function frame(){
+    for (let n = 0; n < 5; n++) step();
+    render();
+    frames++;
+    const now = performance.now();
+    if (now - lastTime >= 1000) {
+        console.log("FPS:", frames);
+        frames = 0; lastTime = now;
+    }
+    requestAnimationFrame(frame);
+}
+frame();
