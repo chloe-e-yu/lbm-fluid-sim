@@ -1,6 +1,9 @@
 # lbm-fluid-sim
 Real-time 2D Lattice Boltzmann fluid simulator in the browser (Work in progress)
 
+## Run it
+[Live demo](https://chloe-e-yu.github.io/lbm-fluid-sim/) - runs in browser, no install
+
 ![Lid-driven cavity flow](demo.png)
 
 ## What it does
@@ -30,12 +33,13 @@ Correctness checks run on every load (see console):
 
 Throughput is flat across grid sizes (~15 MLUPS) — the current ceiling.
 
-Profiled render-path caching and online-allocation elimination - no measurable gain; the ceiling is compute-bound. Next: WebGL port.
+Profiled render-path caching and object-allocation elimination - no measurable gain; the ceiling is compute-bound. Next: WebGL port.
 
 ## Run it
 Open `index.html` with any local server (e.g. VS Code Live Server).
 
 ## Roadmap
+- [x] Performance profiling (render path, allocation - ceiling is compute-bound)
 - [ ] Interactive obstacle placement (mouse)
-- [ ] Render-path optimization
-- [ ] Deployment (GitHub Pages)
+- [ ] WebGL port
+- [x] Deployment (GitHub Pages)
