@@ -87,7 +87,9 @@ function equilibrium(q, rho, ux, uy) {
 // verification
 console.log(equilibrium(1,1,0,0), w[1]); //should 0.11111...
 
-
+// velocity field cache: written by collide(), read by render()
+let uxArr = new Float32Array(NX * NY);
+let uyArr = new Float32Array(NX * NY);
 
 // Phase 2: Collision and Streaming
 const tau = 0.6; // relaxation time; viscosity nu = (tau - 0.5) / 3
@@ -98,10 +100,25 @@ const uWall = 0.1; // lid velocity (lattice units) - Lid-driven cavity
 function collide() {
     for (let y = 0; y < NY; y++) {
         for (let x = 0; x < NX; x++) {
-            const {rho, ux, uy} = macroscopic(x,y);
+            // inline macroscopic: no object allocation
+            const base = (y * NX + x) * 9;
+            let rho = 0, ux = 0, uy = 0;
+            for (let q = 0; q < 9; q++) {
+                const f_q = f[base + q];
+                rho += f_q;
+                ux += f_q * cx[q];
+                uy += f_q * cy[q];
+            }
+            ux /= rho;
+            uy /= rho;
+
+            uxArr[y * NX + x] = ux;
+            uyArr[y * NX + x] = uy;
+
+
             for (let q = 0; q < 9; q++) {
                 const feq_q = equilibrium(q, rho, ux, uy);
-                const i = idx(x,y,q);
+                const i = base + q;
                 f[i] = f[i] - omega * (f[i] - feq_q);
                 // equivalent: f[i] = (1 - omega)* f[i] + omega * feq_q;
             }
@@ -181,7 +198,8 @@ function speedToColor(speed) {
 function render(){
     for (let y = 0; y < NY; y++) {
         for (let x = 0; x < NX; x++){
-            const { ux, uy } = macroscopic(x, y);
+            const ux = uxArr[y * NX + x];
+            const uy = uyArr[y * NX + x];            
             const speed = Math.sqrt(ux * ux + uy * uy);
             const [r, g, b] = speedToColor(speed);
 
