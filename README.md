@@ -29,7 +29,8 @@ Correctness checks run on every load (see console):
 | 600×300   | 180K  | ~16      | ~14.4M updates/s |
 
 Throughput is flat across grid sizes (~15 MLUPS) — the current ceiling.
-Next: eliminating redundant macroscopic recomputation in the render path.
+
+Profiled render-path caching and online-allocation elimination - no measurable gain; the ceiling is compute-bound. Next: WebGL port.
 
 ## Run it
 Open `index.html` with any local server (e.g. VS Code Live Server).
